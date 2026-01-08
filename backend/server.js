@@ -54,7 +54,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(xssClean());
 app.use(compression());
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/fitness-app', {
+mongoose.connect(process.env.MONGO_URI, {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
