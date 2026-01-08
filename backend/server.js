@@ -54,6 +54,11 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(xssClean());
 app.use(compression());
 
+if (!process.env.MONGO_URI) {
+  console.error('FATAL: MONGO_URI environment variable not set!');
+  process.exit(1);
+}
+
 mongoose.connect(process.env.MONGO_URI, {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
