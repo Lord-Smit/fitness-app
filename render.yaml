@@ -11,6 +11,7 @@ services:
         value: 10000
       - key: MONGO_URI
         sync: false
+        fromService: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
