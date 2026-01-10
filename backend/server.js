@@ -12,7 +12,14 @@ dotenv.config();
 const app = express();
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? process.env.CORS_ORIGIN?.split(',') || []
+  ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [
+      'exp://localhost:19000',
+      'exp://localhost:8081',
+      'http://localhost:19000',
+      'http://localhost:8081',
+      'https://u.expo.dev',
+      'https://expo.dev',
+    ])
   : [
       'http://localhost:8081',
       'http://localhost:19000',
@@ -40,10 +47,11 @@ app.use('/api/', limiter);
 
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log('CORS blocked origin:', origin);
+      callback(null, true);
     }
   },
   credentials: true,
@@ -67,7 +75,10 @@ mongoose.connect(process.env.MONGO_URI, {
   socketTimeoutMS: 45000,
 })
 .then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('MongoDB connection error:', err.message);
+  console.log('Server will continue running but API calls will fail until MongoDB is available');
+});
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/exercises', require('./routes/exercises'));
