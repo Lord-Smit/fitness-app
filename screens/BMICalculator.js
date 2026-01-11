@@ -205,7 +205,7 @@ const BMICalculatorScreen = ({ navigation }) => {
                 <Text style={styles.inputLabel}>Feet</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="5"
+                  placeholder="0"
                   value={heightFt}
                   onChangeText={setHeightFt}
                   keyboardType="numeric"
@@ -215,7 +215,7 @@ const BMICalculatorScreen = ({ navigation }) => {
                 <Text style={styles.inputLabel}>Inches</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="10"
+                  placeholder="0"
                   value={heightIn}
                   onChangeText={setHeightIn}
                   keyboardType="numeric"
@@ -227,7 +227,7 @@ const BMICalculatorScreen = ({ navigation }) => {
               <Text style={styles.inputLabel}>Centimeters</Text>
               <TextInput
                 style={styles.inputFull}
-                placeholder="178"
+                placeholder="0"
                 value={heightCm}
                 onChangeText={setHeightCm}
                 keyboardType="numeric"
@@ -254,7 +254,7 @@ const BMICalculatorScreen = ({ navigation }) => {
               <Text style={styles.inputLabel}>Kilograms</Text>
               <TextInput
                 style={styles.inputFull}
-                placeholder="75"
+                placeholder="0"
                 value={weightKg}
                 onChangeText={setWeightKg}
                 keyboardType="numeric"
