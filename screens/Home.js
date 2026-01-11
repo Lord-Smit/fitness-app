@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, ScrollView, 
 import { Svg, Circle, Path } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient, { API_BASE_URL } from '../src/config/api';
+import { useNetwork } from '../src/context/NetworkContext';
 
 const CircularProgress = ({ progress, size, strokeWidth, color, backgroundColor }) => {
   const radius = (size - strokeWidth) / 2;
@@ -37,6 +38,7 @@ const CircularProgress = ({ progress, size, strokeWidth, color, backgroundColor 
 };
 
 const HomeScreen = ({ navigation }) => {
+  const { isConnected } = useNetwork();
   const [workouts, setWorkouts] = useState([]);
   const [stats, setStats] = useState({ workouts: 0, volume: 0, exercises: 0, weeklyWorkouts: 0 });
   const [lastBMI, setLastBMI] = useState(null);
@@ -67,72 +69,98 @@ const HomeScreen = ({ navigation }) => {
           console.log('Error fetching water data:', waterErr.message);
         }
 
-        const res = await apiClient.get('/workouts', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = res.data;
-        const today = new Date();
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - today.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-        const weeklyWorkouts = data.filter(w => new Date(w.date) >= startOfWeek).length;
-        const monthlyWorkouts = data.filter(w => new Date(w.date) >= startOfMonth).length;
-
-        const todayWorkouts = data.filter(w => {
-          const workoutDate = new Date(w.date);
-          return workoutDate.toDateString() === today.toDateString();
-        });
-
-        const todayCalories = todayWorkouts.reduce((sum, w) => {
-          const volume = w.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0);
-          return sum + Math.round(volume * 0.15);
-        }, 0);
-
-        const todayMinutes = todayWorkouts.reduce((sum, w) => {
-          return sum + w.exercises.length * 5;
-        }, 0);
-
-        let streak = 0;
-        for (let i = 0; i < 365; i++) {
-          const checkDate = new Date(today);
-          checkDate.setDate(today.getDate() - i);
-          const hasWorkout = data.some(w => {
-            const workoutDate = new Date(w.date);
-            return workoutDate.toDateString() === checkDate.toDateString();
-          });
-          if (hasWorkout) {
-            streak++;
-          } else if (i > 0) {
-            break;
-          }
+        // Try to load cached data first
+        const cachedData = await AsyncStorage.getItem('cached_home_data');
+        if (cachedData) {
+          const parsedData = JSON.parse(cachedData);
+          processHomeData(parsedData); // We need to extract the processing logic
         }
 
-        setWorkouts(data.slice(0, 5));
-        setStats({
-          workouts: data.length,
-          volume: data.reduce((sum, w) => sum + w.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0), 0),
-          exercises: data.reduce((sum, w) => sum + w.exercises.length, 0),
-          weeklyWorkouts,
-        });
-        setDailyStats({
-          calories: todayCalories,
-          streak,
-          monthlyWorkouts,
-          activeMinutes: todayMinutes,
-        });
+        if (isConnected) {
+          const res = await apiClient.get('/workouts', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = res.data;
+          await AsyncStorage.setItem('cached_home_data', JSON.stringify(data));
+          processHomeData(data);
+        } else if (!cachedData) {
+          Alert.alert('Offline', 'No offline data available. Please connect to internet.');
+        } else {
+          // We are offline but have cached data, maybe show a small indicator or just proceed
+          console.log('Using cached data');
+        }
       }
     } catch (err) {
       console.log('Error fetching data:', err);
-      const errorMsg = err.code === 'ECONNABORTED'
-        ? 'Server is waking up (cold start). Please wait and try again in 30 seconds.'
-        : err.response?.data?.error || 'Failed to load data. Check your connection.';
-      Alert.alert('Connection Issue', errorMsg);
+      // Fallback to cache if error
+      const cachedData = await AsyncStorage.getItem('cached_home_data');
+      if (cachedData) {
+        processHomeData(JSON.parse(cachedData));
+      } else {
+        const errorMsg = err.code === 'ECONNABORTED'
+          ? 'Server is waking up (cold start). Please wait and try again in 30 seconds.'
+          : err.response?.data?.msg || err.response?.data?.error || err.message || 'Failed to load data. Check your connection.';
+        Alert.alert('Connection Issue', errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  const processHomeData = (data) => {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const weeklyWorkouts = data.filter(w => new Date(w.date) >= startOfWeek).length;
+    const monthlyWorkouts = data.filter(w => new Date(w.date) >= startOfMonth).length;
+
+    const todayWorkouts = data.filter(w => {
+      const workoutDate = new Date(w.date);
+      return workoutDate.toDateString() === today.toDateString();
+    });
+
+    const todayCalories = todayWorkouts.reduce((sum, w) => {
+      const volume = w.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0);
+      return sum + Math.round(volume * 0.15);
+    }, 0);
+
+    const todayMinutes = todayWorkouts.reduce((sum, w) => {
+      return sum + w.exercises.length * 5;
+    }, 0);
+
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      const hasWorkout = data.some(w => {
+        const workoutDate = new Date(w.date);
+        return workoutDate.toDateString() === checkDate.toDateString();
+      });
+      if (hasWorkout) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+
+    setWorkouts(data.slice(0, 5));
+    setStats({
+      workouts: data.length,
+      volume: data.reduce((sum, w) => sum + w.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0), 0),
+      exercises: data.reduce((sum, w) => sum + w.exercises.length, 0),
+      weeklyWorkouts,
+    });
+    setDailyStats({
+      calories: todayCalories,
+      streak,
+      monthlyWorkouts,
+      activeMinutes: todayMinutes,
+    });
+  };
+
 
   useEffect(() => {
     fetchData();

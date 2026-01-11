@@ -62,7 +62,11 @@ const ExercisesScreen = ({ navigation }) => {
 
         <View style={styles.exerciseList}>
           {filteredExercises.map((item) => (
-            <View key={item._id} style={styles.exerciseCard}>
+            <TouchableOpacity
+              key={item._id}
+              style={styles.exerciseCard}
+              onPress={() => navigation.navigate('ExerciseDetail', { exerciseId: item._id })}
+            >
               <View style={styles.exerciseHeader}>
                 <View style={[styles.typeBadge, { backgroundColor: getTypeColor(item.type) + '20' }]}>
                   <Text style={[styles.typeText, { color: getTypeColor(item.type) }]}>{item.type}</Text>
@@ -76,7 +80,7 @@ const ExercisesScreen = ({ navigation }) => {
                   </View>
                 ))}
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       </ScrollView>

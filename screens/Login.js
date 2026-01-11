@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../src/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNetwork } from '../src/context/NetworkContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -11,7 +12,14 @@ const LoginScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const { isConnected } = useNetwork();
+
   const handleLogin = async () => {
+    if (!isConnected) {
+      Alert.alert('Offline', 'Please connect to the internet to login.');
+      return;
+    }
+
     if (!email || !password) {
       return;
     }

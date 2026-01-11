@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { NetworkProvider } from './src/context/NetworkContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
@@ -16,6 +17,7 @@ import BMICalculatorScreen from './screens/BMICalculator';
 import ProgramsScreen from './screens/Programs';
 import ProgramDetailScreen from './screens/ProgramDetail';
 import ActiveProgramScreen from './screens/ActiveProgram';
+import ExerciseDetailScreen from './screens/ExerciseDetail';
 import WaterScreen from './screens/Water';
 
 const Stack = createStackNavigator();
@@ -66,30 +68,30 @@ function DrawerNavigator() {
         component={ProgressScreen}
         options={{ drawerLabel: '📊 Progress' }}
       />
-    
+
       <Drawer.Screen
         name="Exercises"
         component={ExercisesScreen}
         options={{ drawerLabel: '💪 Exercises' }}
       />
-        <Drawer.Screen
+      <Drawer.Screen
         name="BMI Calculator"
         component={BMICalculatorScreen}
         options={{ drawerLabel: '⚖️ BMI Calculator' }}
       />
-      
+
       <Drawer.Screen
         name="Profile"
         component={ProfileScreen}
         options={{ drawerLabel: '👤 Profile' }}
       />
-      
+
       <Drawer.Screen
         name="Programs"
         component={ProgramsScreen}
         options={{ drawerLabel: '📋 Programs' }}
       />
-      
+
       <Drawer.Screen
         name="My Program"
         component={ActiveProgramScreen}
@@ -101,7 +103,7 @@ function DrawerNavigator() {
         component={WaterScreen}
         options={{ drawerLabel: '💧 Hydration' }}
       />
-      
+
     </Drawer.Navigator>
   );
 }
@@ -139,15 +141,18 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Main" component={DrawerNavigator} />
-          <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </GestureHandlerRootView>
+    <NetworkProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="Main" component={DrawerNavigator} />
+            <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
+            <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </GestureHandlerRootView>
+    </NetworkProvider>
   );
 }

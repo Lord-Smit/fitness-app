@@ -3,7 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../src/config/api';
 
+import { useNetwork } from '../src/context/NetworkContext';
+import { addToQueue } from '../src/services/OfflineQueue';
+
 const ProfileScreen = ({ navigation }) => {
+  const { isConnected } = useNetwork();
   const [user, setUser] = useState({});
   const [stats, setStats] = useState({ workouts: 0, streak: 0, volume: 0, memberSince: null });
   const [bodyMetrics, setBodyMetrics] = useState({ weight: '', height: '', bodyFat: '' });
@@ -111,6 +115,18 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const saveProfile = async () => {
+    if (!isConnected) {
+      // We can queue simple profile updates
+      await addToQueue({
+        method: 'put',
+        url: '/auth/me',
+        data: { name, email }
+      });
+      setEditing(false);
+      Alert.alert('Saved Offline', 'Profile changes saved locally and will sync when online.');
+      return;
+    }
+
     const token = await AsyncStorage.getItem('token');
     try {
       const res = await apiClient.put(`/auth/me`, { name, email }, {
@@ -125,13 +141,26 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const saveBodyMetrics = async () => {
+    const metricsData = {
+      weight: bodyMetrics.weight ? parseFloat(bodyMetrics.weight) : null,
+      height: bodyMetrics.height ? parseFloat(bodyMetrics.height) : null,
+      bodyFat: bodyMetrics.bodyFat ? parseFloat(bodyMetrics.bodyFat) : null,
+    };
+
+    if (!isConnected) {
+      await addToQueue({
+        method: 'put',
+        url: '/auth/me',
+        data: metricsData
+      });
+      setEditingMetrics(false);
+      Alert.alert('Saved Offline', 'Body metrics saved locally and will sync when online.');
+      return;
+    }
+
     const token = await AsyncStorage.getItem('token');
     try {
-      const res = await apiClient.put(`/auth/me`, {
-        weight: bodyMetrics.weight ? parseFloat(bodyMetrics.weight) : null,
-        height: bodyMetrics.height ? parseFloat(bodyMetrics.height) : null,
-        bodyFat: bodyMetrics.bodyFat ? parseFloat(bodyMetrics.bodyFat) : null,
-      }, {
+      const res = await apiClient.put(`/auth/me`, metricsData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(res.data);
@@ -143,6 +172,10 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const changePassword = async () => {
+    if (!isConnected) {
+      Alert.alert('Offline', 'Cannot change password while offline.');
+      return;
+    }
     if (passwords.new !== passwords.confirm) {
       Alert.alert('Error', 'Passwords do not match');
       return;
@@ -169,6 +202,10 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const deleteAccount = async () => {
+    if (!isConnected) {
+      Alert.alert('Offline', 'Cannot delete account while offline.');
+      return;
+    }
     Alert.alert('Delete Account', 'Are you sure? This action cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -219,8 +256,41 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{user.name ? user.name.charAt(0).toUpperCase() : '?'}</Text>
           </View>
-          <Text style={styles.userName}>{user.name || 'User'}</Text>
-          <Text style={styles.userEmail}>{user.email || ''}</Text>
+
+          {editing ? (
+            <View style={styles.editProfileContainer}>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Name"
+              />
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Email"
+                autoCapitalize="none"
+              />
+              <View style={styles.editButtonsRow}>
+                <TouchableOpacity style={styles.saveButtonSmall} onPress={saveProfile}>
+                  <Text style={styles.saveButtonTextSmall}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButtonSmall} onPress={() => setEditing(false)}>
+                  <Text style={styles.cancelButtonTextSmall}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.userName}>{user.name || 'User'}</Text>
+              <Text style={styles.userEmail}>{user.email || ''}</Text>
+              <TouchableOpacity style={styles.editProfileLink} onPress={() => setEditing(true)}>
+                <Text style={styles.editProfileLinkText}>Edit Profile</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
           <Text style={styles.memberSince}>Member since {stats.memberSince}</Text>
         </View>
 
@@ -451,12 +521,20 @@ const styles = StyleSheet.create({
   topBarRight: { width: 40 },
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingVertical: 20 },
-  avatarContainer: { alignItems: 'center', marginBottom: 25 },
+  avatarContainer: { alignItems: 'center', marginBottom: 25, width: '100%' },
   avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#667eea', alignItems: 'center', justifyContent: 'center', marginBottom: 15, shadowColor: '#667eea', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 },
   avatarText: { fontSize: 40, fontWeight: '800', color: '#ffffff' },
   userName: { fontSize: 24, fontWeight: '700', color: '#1a1a2e', marginBottom: 5 },
   userEmail: { fontSize: 14, color: '#888' },
-  memberSince: { fontSize: 12, color: '#888', marginTop: 4 },
+  editProfileLink: { marginTop: 10, padding: 8 },
+  editProfileLinkText: { color: '#667eea', fontWeight: '600' },
+  editProfileContainer: { width: '80%', alignItems: 'center' },
+  editButtonsRow: { flexDirection: 'row', marginTop: 10, gap: 10 },
+  saveButtonSmall: { backgroundColor: '#667eea', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20 },
+  saveButtonTextSmall: { color: '#fff', fontWeight: 'bold' },
+  cancelButtonSmall: { backgroundColor: '#e5e7eb', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20 },
+  cancelButtonTextSmall: { color: '#666', fontWeight: 'bold' },
+  memberSince: { fontSize: 12, color: '#888', marginTop: 15 },
   sectionHeader: { fontSize: 18, fontWeight: '700', color: '#1a1a2e', marginBottom: 12, marginTop: 10 },
   statsGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   statCard: { backgroundColor: '#ffffff', borderRadius: 16, padding: 16, alignItems: 'center', width: '31%', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },

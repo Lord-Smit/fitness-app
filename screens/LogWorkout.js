@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../src/config/api';
+import { useNetwork } from '../src/context/NetworkContext';
+import { addToQueue } from '../src/services/OfflineQueue';
 
 const LogWorkoutScreen = ({ navigation }) => {
+  const { isConnected } = useNetwork();
   const [currentStep, setCurrentStep] = useState(0);
   const [exercises, setExercises] = useState([]);
   const [selectedExercises, setSelectedExercises] = useState([]);
@@ -91,7 +94,7 @@ const LogWorkoutScreen = ({ navigation }) => {
         setSaving(false);
         return;
       }
-      
+
       const workoutData = {
         exercises: selectedExercises.map((ex) => ({
           exercise: ex.exercise,
@@ -103,29 +106,58 @@ const LogWorkoutScreen = ({ navigation }) => {
         notes: notes,
         date: new Date()
       };
-      
+
+      if (!isConnected) {
+        await addToQueue({
+          method: 'post',
+          url: '/workouts',
+          data: workoutData
+        });
+
+        console.log('=== SAVED OFFLINE ===');
+
+        setSelectedExercises([]);
+        setNotes('');
+        setSearchQuery('');
+        setCurrentStep(0);
+        setSaving(false);
+
+        Alert.alert('Saved Offline', 'Your workout has been saved locally and will sync when you are back online.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Main' }, { name: 'Progress' }]
+              });
+            }
+          }
+        ]);
+        return;
+      }
+
       console.log('=== SAVING WORKOUT ===');
       console.log('Token exists:', !!token);
       console.log('Workout data:', JSON.stringify(workoutData, null, 2));
-      
+
       const response = await apiClient.post(`/workouts`, workoutData, {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
       });
-      
+
       console.log('=== WORKOUT SAVED SUCCESSFULLY ===');
       console.log('Response:', response.data);
-      
+
       setSelectedExercises([]);
       setNotes('');
       setSearchQuery('');
       setCurrentStep(0);
-      
+
       Alert.alert('🎉 Success!', 'Workout logged successfully!', [
-        { 
-          text: 'View Progress', 
+        {
+          text: 'View Progress',
           onPress: () => {
             navigation.reset({
               index: 0,
@@ -167,7 +199,7 @@ const LogWorkoutScreen = ({ navigation }) => {
         <Text style={styles.startEmoji}>💪</Text>
         <Text style={styles.startTitle}>Log Your Workout</Text>
         <Text style={styles.startSubtitle}>Track your progress and reach your fitness goals</Text>
-        
+
         <TouchableOpacity style={styles.mainButton} onPress={() => setCurrentStep(1)}>
           <Text style={styles.mainButtonText}>Start New Workout</Text>
         </TouchableOpacity>
@@ -234,8 +266,8 @@ const LogWorkoutScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.backButtonSmall} onPress={() => setCurrentStep(0)}>
           <Text style={styles.backButtonTextSmall}>← Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.continueButton, selectedExercises.length === 0 && styles.mainButtonDisabled]} 
+        <TouchableOpacity
+          style={[styles.continueButton, selectedExercises.length === 0 && styles.mainButtonDisabled]}
           onPress={() => setCurrentStep(2)}
           disabled={selectedExercises.length === 0}
         >
@@ -252,7 +284,7 @@ const LogWorkoutScreen = ({ navigation }) => {
         <Text style={styles.sectionSubtitle}>Enter your reps and weight</Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.configureScrollContent}
       >
@@ -265,7 +297,7 @@ const LogWorkoutScreen = ({ navigation }) => {
                   <Text style={styles.configureIcon}>💪</Text>
                   <Text style={styles.configureName}>{exerciseInfo?.name || 'Exercise'}</Text>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.removeButton}
                   onPress={() => {
                     setSelectedExercises(selectedExercises.filter((_, i) => i !== index));
@@ -278,14 +310,14 @@ const LogWorkoutScreen = ({ navigation }) => {
               <View style={styles.setsHeader}>
                 <Text style={styles.inputLabel}>Sets</Text>
                 <View style={styles.setsControls}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.setAdjustButton}
                     onPress={() => updateNumSets(index, Math.max(1, item.sets.length - 1))}
                   >
                     <Text style={styles.setAdjustText}>−</Text>
                   </TouchableOpacity>
                   <Text style={styles.setsCount}>{item.sets.length}</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.setAdjustButton}
                     onPress={() => updateNumSets(index, item.sets.length + 1)}
                   >
@@ -401,8 +433,8 @@ const LogWorkoutScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.backButtonSmall} onPress={() => setCurrentStep(2)}>
           <Text style={styles.backButtonTextSmall}>← Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.continueButton, saving && styles.mainButtonDisabled]} 
+        <TouchableOpacity
+          style={[styles.continueButton, saving && styles.mainButtonDisabled]}
           onPress={saveWorkout}
           disabled={saving}
         >
@@ -445,13 +477,13 @@ const LogWorkoutScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fc' },
-  
+
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 15 },
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   closeButtonText: { fontSize: 18, color: '#666' },
   screenTitle: { fontSize: 20, fontWeight: '700', color: '#1a1a2e' },
   topBarRight: { width: 40 },
-  
+
   stepIndicator: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 30, marginBottom: 20 },
   stepItem: { alignItems: 'center', zIndex: 1 },
   stepCircle: { width: 45, height: 45, borderRadius: 22, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3, borderWidth: 2, borderColor: '#e0e0e0' },
@@ -462,33 +494,33 @@ const styles = StyleSheet.create({
   stepLabelActive: { color: '#667eea', fontWeight: '600' },
   stepLine: { position: 'absolute', left: 50, right: 50, height: 3, backgroundColor: '#e0e0e0', top: 23, zIndex: 0 },
   stepLineFill: { height: '100%', backgroundColor: '#667eea', borderRadius: 2 },
-  
+
   stepContent: { flex: 1, paddingHorizontal: 20 },
-  
+
   startCard: { backgroundColor: '#ffffff', borderRadius: 24, padding: 30, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 8, marginTop: 20 },
   startEmoji: { fontSize: 60, marginBottom: 15 },
   startTitle: { fontSize: 26, fontWeight: '800', color: '#1a1a2e', marginBottom: 8 },
   startSubtitle: { fontSize: 14, color: '#888', textAlign: 'center', marginBottom: 25 },
-  
+
   mainButton: { backgroundColor: '#667eea', paddingHorizontal: 35, paddingVertical: 15, borderRadius: 25, alignItems: 'center', shadowColor: '#667eea', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8, width: '100%' },
   mainButtonDisabled: { opacity: 0.5 },
   mainButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '700' },
-  
+
   divider: { flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#e0e0e0' },
   dividerText: { marginHorizontal: 15, fontSize: 13, color: '#888' },
-  
+
   secondaryButton: { backgroundColor: '#f0f4ff', paddingHorizontal: 25, paddingVertical: 12, borderRadius: 20, alignItems: 'center' },
   secondaryButtonText: { fontSize: 16, fontWeight: '600', color: '#667eea' },
-  
+
   sectionHeader: { marginBottom: 15, paddingHorizontal: 5 },
   sectionTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a2e' },
   sectionSubtitle: { fontSize: 14, color: '#888', marginTop: 3 },
-  
+
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: 16, paddingHorizontal: 15, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
   searchIcon: { fontSize: 18, marginRight: 10 },
   searchInput: { flex: 1, paddingVertical: 14, fontSize: 16, color: '#333' },
-  
+
   exerciseList: { marginBottom: 120 },
   exerciseCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff', borderRadius: 16, padding: 16, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3, borderWidth: 2, borderColor: 'transparent' },
   exerciseCardSelected: { borderColor: '#667eea', backgroundColor: '#f0f4ff' },
@@ -500,7 +532,7 @@ const styles = StyleSheet.create({
   checkCircle: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: '#ddd', alignItems: 'center', justifyContent: 'center' },
   checkCircleActive: { backgroundColor: '#667eea', borderColor: '#667eea' },
   checkmark: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
-  
+
   configureCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 18, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 5 },
   configureHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   configureHeaderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
@@ -508,7 +540,7 @@ const styles = StyleSheet.create({
   configureName: { fontSize: 18, fontWeight: '700', color: '#1a1a2e' },
   removeButton: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center' },
   removeButtonText: { color: '#ef4444', fontSize: 14, fontWeight: 'bold' },
-  
+
   setsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingHorizontal: 5 },
   columnHeaders: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingHorizontal: 5 },
   inputLabel: { fontSize: 13, fontWeight: '600', color: '#666', width: 50 },
@@ -517,27 +549,27 @@ const styles = StyleSheet.create({
   setAdjustButton: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#f0f4ff', alignItems: 'center', justifyContent: 'center' },
   setAdjustText: { fontSize: 20, color: '#667eea', fontWeight: 'bold' },
   setsCount: { fontSize: 18, fontWeight: '700', color: '#1a1a2e', marginHorizontal: 15, minWidth: 30, textAlign: 'center' },
-  
+
   setRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingHorizontal: 5 },
   setNumber: { width: 35, height: 36, borderRadius: 10, backgroundColor: '#667eea', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   setNumberSmall: { width: 35, height: 36, borderRadius: 10, backgroundColor: '#667eea', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   setNumberText: { fontSize: 13, fontWeight: '700', color: '#ffffff' },
   setInput: { flex: 1, backgroundColor: '#f8f9fc', borderRadius: 10, padding: 10, textAlign: 'center', fontSize: 15, fontWeight: '600', color: '#1a1a2e', marginHorizontal: 4, height: 42 },
   setInputSmall: { width: 80, backgroundColor: '#f8f9fc', borderRadius: 10, padding: 10, textAlign: 'center', fontSize: 15, fontWeight: '600', color: '#1a1a2e', marginHorizontal: 4, height: 42 },
-  
+
   configureScrollContent: { paddingBottom: 20 },
   scrollSpacer: { height: 100 },
-  
+
   bottomButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, paddingBottom: 30 },
   backButton: { backgroundColor: '#ffffff', paddingHorizontal: 25, paddingVertical: 14, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#666' },
-  
+
   fixedBottomButtons: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 15, paddingBottom: 25, position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#f8f9fc', borderTopWidth: 1, borderTopColor: '#e0e0e0' },
   backButtonSmall: { backgroundColor: '#ffffff', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   backButtonTextSmall: { fontSize: 15, fontWeight: '600', color: '#666' },
   continueButton: { backgroundColor: '#667eea', paddingHorizontal: 25, paddingVertical: 14, borderRadius: 25, shadowColor: '#667eea', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8, flex: 1, marginLeft: 15 },
   continueButtonText: { color: '#ffffff', fontSize: 17, fontWeight: '700', textAlign: 'center' },
-  
+
   reviewScroll: { flex: 1, paddingBottom: 120 },
   reviewCard: { backgroundColor: '#ffffff', borderRadius: 20, padding: 18, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   reviewHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
@@ -547,11 +579,11 @@ const styles = StyleSheet.create({
   reviewSets: { flexDirection: 'row', flexWrap: 'wrap' },
   reviewSetBadge: { backgroundColor: '#f0f4ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginRight: 8, marginBottom: 8 },
   reviewSetText: { fontSize: 13, fontWeight: '600', color: '#667eea' },
-  
+
   notesContainer: { marginTop: 15, marginBottom: 15 },
   notesLabel: { fontSize: 14, fontWeight: '600', color: '#666', marginBottom: 8 },
   notesInput: { backgroundColor: '#ffffff', borderRadius: 16, padding: 15, fontSize: 15, color: '#333', height: 100, textAlignVertical: 'top', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
-  
+
   summaryCard: { backgroundColor: '#667eea', borderRadius: 20, padding: 20, marginBottom: 20 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   summaryLabel: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
