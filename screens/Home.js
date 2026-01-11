@@ -49,7 +49,7 @@ const HomeScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const weeklyGoal = 5;
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
@@ -58,7 +58,9 @@ const HomeScreen = ({ navigation }) => {
         setLastBMI(JSON.parse(bmiData));
       }
       if (token) {
+        // Fetch fresh data
         try {
+          // Water Data
           const waterRes = await apiClient.get('/water', {
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -67,30 +69,30 @@ const HomeScreen = ({ navigation }) => {
             dailyGoal: waterRes.data.dailyGoal || 2500,
             percentComplete: Math.min(Math.round(((waterRes.data.totalAmount || 0) / (waterRes.data.dailyGoal || 2500)) * 100), 100)
           });
-        } catch (waterErr) {
-          console.log('Error fetching water data:', waterErr.message);
-        }
 
-        // Try to load cached data first
-        const cachedData = await AsyncStorage.getItem('cached_home_data');
-        if (cachedData) {
-          const parsedData = JSON.parse(cachedData);
-          processHomeData(parsedData); // We need to extract the processing logic
-        }
+          // Workouts Data
+          if (isConnected) {
+            const res = await apiClient.get('/workouts', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = res.data;
+            await AsyncStorage.setItem('cached_home_data', JSON.stringify(data));
+            processHomeData(data);
+          } else {
+            // Offline: Try to load from cache
+            const cachedData = await AsyncStorage.getItem('cached_home_data');
+            if (cachedData) processHomeData(JSON.parse(cachedData));
+          }
 
-        if (isConnected) {
-          const res = await apiClient.get('/workouts', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = res.data;
-          await AsyncStorage.setItem('cached_home_data', JSON.stringify(data));
-          processHomeData(data);
-        } else if (!cachedData) {
-          Alert.alert('Offline', 'No offline data available. Please connect to internet.');
-        } else {
-          // We are offline but have cached data, maybe show a small indicator or just proceed
-          console.log('Using cached data');
+        } catch (apiErr) {
+          console.log('Error fetching dashboard data:', apiErr);
+          // Fallback to cache
+          const cachedData = await AsyncStorage.getItem('cached_home_data');
+          if (cachedData) processHomeData(JSON.parse(cachedData));
         }
+      } else {
+        // No token (User logged out?)
+        // Potentially clear data or redirect
       }
     } catch (err) {
       console.log('Error fetching data:', err);
@@ -107,7 +109,7 @@ const HomeScreen = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isConnected]);
 
   const processHomeData = (data) => {
     const today = new Date();
@@ -167,7 +169,7 @@ const HomeScreen = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [])
+    }, [fetchData])
   );
 
   const getBMIColor = (category) => {
