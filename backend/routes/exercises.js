@@ -22,17 +22,37 @@ router.get('/', [
   try {
     const { type, muscle, search } = req.query;
     const filter = {};
-    
+
     if (type) filter.type = type;
     if (muscle) filter.muscleGroups = { $in: [muscle] };
     if (search) {
       filter.name = { $regex: search, $options: 'i' };
     }
-    
+
     const exercises = await Exercise.find(filter).limit(100);
     res.json(exercises);
   } catch (err) {
     console.error('Get exercises error:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+// Get exercise by ID
+router.get('/:id', [
+  param('id').isMongoId().withMessage('Invalid exercise ID'),
+  validateRequest
+], async (req, res) => {
+  try {
+    const exercise = await Exercise.findById(req.params.id);
+    if (!exercise) {
+      return res.status(404).json({ msg: 'Exercise not found' });
+    }
+    res.json(exercise);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Exercise not found' });
+    }
     res.status(500).send('Server error');
   }
 });
@@ -46,10 +66,10 @@ router.post('/', auth, [
 ], async (req, res) => {
   try {
     const { name, type, muscleGroups, instructions } = req.body;
-    
+
     const exercise = new Exercise({ name, type, muscleGroups, instructions });
     await exercise.save();
-    
+
     res.status(201).json(exercise);
   } catch (err) {
     console.error('Create exercise error:', err);
@@ -66,7 +86,7 @@ router.put('/:id', auth, [
 ], async (req, res) => {
   try {
     let exercise = await Exercise.findById(req.params.id);
-    
+
     if (!exercise) {
       return res.status(404).json({ msg: 'Exercise not found' });
     }
@@ -76,7 +96,7 @@ router.put('/:id', auth, [
     if (type !== undefined) exercise.type = type;
     if (muscleGroups !== undefined) exercise.muscleGroups = muscleGroups;
     if (instructions !== undefined) exercise.instructions = instructions;
-    
+
     await exercise.save();
     res.json(exercise);
   } catch (err) {
@@ -91,11 +111,11 @@ router.delete('/:id', auth, [
 ], async (req, res) => {
   try {
     const exercise = await Exercise.findByIdAndDelete(req.params.id);
-    
+
     if (!exercise) {
       return res.status(404).json({ msg: 'Exercise not found' });
     }
-    
+
     res.json({ msg: 'Exercise removed' });
   } catch (err) {
     console.error('Delete exercise error:', err);

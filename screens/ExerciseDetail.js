@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../src/config/api';
 
@@ -16,7 +17,7 @@ const getTypeColor = (type) => {
 };
 
 const ExerciseDetailScreen = ({ route, navigation }) => {
-    const { exerciseId } = route.params;
+    const exerciseId = route.params?.exerciseId;
     const [exercise, setExercise] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -55,7 +56,7 @@ const ExerciseDetailScreen = ({ route, navigation }) => {
     const typeColor = getTypeColor(exercise.type);
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Text style={styles.backButtonText}>←</Text>
@@ -119,14 +120,14 @@ const ExerciseDetailScreen = ({ route, navigation }) => {
                     </View>
                 )}
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8f9fc' },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 15, backgroundColor: '#ffffff' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, backgroundColor: '#ffffff' },
     backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8f9fc', alignItems: 'center', justifyContent: 'center' },
     backButtonText: { fontSize: 24, color: '#333', marginTop: -2 },
     headerTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a2e' },
