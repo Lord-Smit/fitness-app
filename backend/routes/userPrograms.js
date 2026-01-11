@@ -2,6 +2,7 @@ const express = require('express');
 const { param, body, validationResult } = require('express-validator');
 const UserProgram = require('../models/UserProgram');
 const Program = require('../models/Program');
+const Workout = require('../models/Workout');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -20,7 +21,7 @@ router.get('/', auth, async (req, res) => {
       .populate('program', 'name difficulty type daysPerWeek durationWeeks image')
       .sort({ startDate: -1 })
       .limit(50);
-    
+
     res.json(userPrograms);
   } catch (err) {
     console.error('Error fetching user programs:', err);
@@ -34,11 +35,11 @@ router.get('/active', auth, async (req, res) => {
       user: req.user.id,
       isCompleted: false
     }).populate('program');
-    
+
     if (!activeProgram) {
       return res.json(null);
     }
-    
+
     res.json(activeProgram);
   } catch (err) {
     console.error('Error fetching active program:', err);
@@ -52,28 +53,28 @@ router.post('/start', auth, [
 ], async (req, res) => {
   try {
     const { programId } = req.body;
-    
+
     const existingProgram = await UserProgram.findOne({
       user: req.user.id,
       isCompleted: false
     });
-    
+
     if (existingProgram) {
-      return res.status(400).json({ 
-        msg: 'You already have an active program. Complete or cancel it first.' 
+      return res.status(400).json({
+        msg: 'You already have an active program. Complete or cancel it first.'
       });
     }
-    
+
     const program = await Program.findById(programId);
-    
+
     if (!program) {
       return res.status(404).json({ msg: 'Program not found' });
     }
-    
+
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + (program.durationWeeks * 7));
-    
+
     const userProgram = new UserProgram({
       user: req.user.id,
       program: programId,
@@ -81,12 +82,12 @@ router.post('/start', auth, [
       targetEndDate: endDate,
       currentDay: 1
     });
-    
+
     await userProgram.save();
-    
+
     const populated = await UserProgram.findById(userProgram._id)
       .populate('program', 'name difficulty type daysPerWeek durationWeeks days');
-    
+
     res.status(201).json(populated);
   } catch (err) {
     console.error('Error starting program:', err);
@@ -102,52 +103,87 @@ router.post('/:id/complete-day', auth, [
 ], async (req, res) => {
   try {
     const { dayNumber, skipped = false } = req.body;
-    
+
     const userProgram = await UserProgram.findOne({
       _id: req.params.id,
       user: req.user.id
     });
-    
+
     if (!userProgram) {
       return res.status(404).json({ msg: 'User program not found' });
     }
-    
+
     if (userProgram.isCompleted) {
       return res.status(400).json({ msg: 'Program already completed' });
     }
-    
+
     const alreadyCompleted = userProgram.completedDays.some(
       d => d.dayNumber === dayNumber
     );
-    
+
     if (alreadyCompleted) {
       return res.status(400).json({ msg: 'Day already completed' });
     }
-    
+
     userProgram.completedDays.push({
       dayNumber,
       completedAt: new Date(),
       skipped
     });
-    
+
     const program = await Program.findById(userProgram.program);
     const totalDays = program?.days?.length || userProgram.targetEndDate;
     const completedCount = userProgram.completedDays.length;
-    
+
     if (dayNumber === userProgram.currentDay) {
       userProgram.currentDay = Math.min(dayNumber + 1, totalDays || 999);
     }
-    
+
     if (completedCount >= totalDays) {
       userProgram.isCompleted = true;
       userProgram.completedAt = new Date();
     }
-    
+
     await userProgram.save();
-    
+
+    // Auto-create workout log for progress tracking
+    if (program) {
+      const dayData = program.days.find(d => d.dayNumber === dayNumber);
+      if (dayData && dayData.dayType === 'workout') {
+        try {
+          const workoutExercises = dayData.exercises.map(ex => {
+            // Parse reps string "10-12" -> 10, or "5" -> 5
+            const targetReps = parseInt(ex.reps) || 10;
+            const numSets = ex.sets || 3;
+
+            const sets = [];
+            for (let i = 0; i < numSets; i++) {
+              sets.push({ reps: targetReps, weight: 0 }); // Default weight 0
+            }
+
+            return {
+              exercise: ex.exercise,
+              sets
+            };
+          });
+
+          const workout = new Workout({
+            user: req.user.id,
+            date: new Date(),
+            exercises: workoutExercises,
+            notes: `Completed Day ${dayNumber} of ${program.name}`
+          });
+
+          await workout.save();
+        } catch (logErr) {
+          console.error('Error auto-logging workout:', logErr);
+        }
+      }
+    }
+
     const updated = await UserProgram.findById(userProgram._id)
       .populate('program', 'name difficulty type daysPerWeek durationWeeks days');
-    
+
     res.json(updated);
   } catch (err) {
     console.error('Error completing day:', err);
@@ -164,11 +200,11 @@ router.delete('/:id', auth, [
       _id: req.params.id,
       user: req.user.id
     });
-    
+
     if (!userProgram) {
       return res.status(404).json({ msg: 'User program not found' });
     }
-    
+
     res.json({ msg: 'Program cancelled' });
   } catch (err) {
     console.error('Error cancelling program:', err);
