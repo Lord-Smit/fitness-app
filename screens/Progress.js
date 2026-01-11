@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Alert, Image, RefreshControl } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +8,13 @@ import apiClient from '../src/config/api';
 const ProgressScreen = ({ navigation }) => {
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await fetchWorkouts();
+    setRefreshing(false);
+  }, []);
 
   const fetchWorkouts = async () => {
     try {
@@ -37,7 +44,7 @@ const ProgressScreen = ({ navigation }) => {
     const totalWorkouts = workouts.length;
     const totalWeight = workouts.reduce((sum, w) => sum + w.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0), 0);
     const avgWeight = totalWorkouts > 0 ? totalWeight / totalWorkouts : 0;
-    
+
     const thisWeekStart = new Date();
     thisWeekStart.setDate(thisWeekStart.getDate() - 7);
     thisWeekStart.setHours(0, 0, 0, 0);
@@ -46,7 +53,7 @@ const ProgressScreen = ({ navigation }) => {
       workoutDate.setHours(0, 0, 0, 0);
       return workoutDate >= thisWeekStart;
     }).length;
-    
+
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -64,14 +71,14 @@ const ProgressScreen = ({ navigation }) => {
         break;
       }
     }
-    
+
     const totalExercises = workouts.reduce((sum, w) => sum + w.exercises.length, 0);
     const totalSets = workouts.reduce((sum, w) => sum + w.exercises.reduce((s, e) => s + e.sets.length, 0), 0);
     const bestWorkout = workouts.reduce((best, w) => {
       const weight = w.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0);
       return weight > best ? weight : best;
     }, 0);
-    
+
     return { totalWorkouts, totalWeight, avgWeight, thisWeek, streak, totalExercises, totalSets, bestWorkout };
   };
 
@@ -129,7 +136,13 @@ const ProgressScreen = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#667eea']} />
+      }
+    >
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>← Dashboard</Text>
@@ -279,9 +292,9 @@ const ProgressScreen = ({ navigation }) => {
             <Text style={styles.emptyStateTitle}>No Data Yet</Text>
             <Text style={styles.emptyStateSubtitle}>Complete your first workout to see your progress chart!</Text>
           </View>
-          )}
-        </View>
-      </ScrollView>
+        )}
+      </View>
+    </ScrollView>
   );
 };
 
@@ -291,15 +304,15 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fc' },
   loadingSpinner: { width: 50, height: 50, borderRadius: 25, borderWidth: 4, borderColor: '#e0e0e0', borderTopColor: '#667eea', marginBottom: 20 },
   loadingText: { fontSize: 16, color: '#666' },
-  
+
   topBar: { width: '100%', marginBottom: 15, alignItems: 'flex-start' },
   backButton: { backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   backButtonText: { fontSize: 14, fontWeight: '600', color: '#667eea' },
-  
+
   header: { width: '100%', marginBottom: 25, alignItems: 'center' },
   title: { fontSize: 32, fontWeight: '800', color: '#1a1a2e', marginBottom: 5 },
   subtitle: { fontSize: 16, color: '#666' },
-  
+
   statsContainer: { width: '100%', marginBottom: 25 },
   mainStatRow: { flexDirection: 'row', marginBottom: 15 },
   mainStatCard: { flex: 1, backgroundColor: '#667eea', borderRadius: 20, padding: 20, marginRight: 10, shadowColor: '#667eea', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
@@ -311,29 +324,29 @@ const styles = StyleSheet.create({
   trendLabel: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginLeft: 5 },
   secondaryStatValue: { fontSize: 32, fontWeight: '800', color: '#1a1a2e' },
   secondaryStatLabel: { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 5 },
-  
+
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: { width: '31%', backgroundColor: '#ffffff', borderRadius: 16, padding: 15, alignItems: 'center', marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
   statIconContainer: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#f0f4ff', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   statIcon: { fontSize: 20 },
   statNumber: { fontSize: 20, fontWeight: '700', color: '#1a1a2e' },
   statLabel: { fontSize: 11, color: '#888', textAlign: 'center', marginTop: 4 },
-  
+
   section: { width: '100%', marginBottom: 25 },
   sectionHeader: { marginBottom: 15, paddingHorizontal: 5 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: '#1a1a2e' },
   sectionSubtitle: { fontSize: 14, color: '#888', marginTop: 2 },
-  
+
   chartContainer: { backgroundColor: '#ffffff', borderRadius: 20, padding: 15, paddingBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 5, marginHorizontal: 5 },
   chart: { borderRadius: 16 },
-  
+
   emptyState: { backgroundColor: '#ffffff', borderRadius: 20, padding: 40, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 5 },
   emptyStateEmoji: { fontSize: 60, marginBottom: 15 },
   emptyStateTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a2e', marginBottom: 8 },
   emptyStateSubtitle: { fontSize: 14, color: '#888', textAlign: 'center', marginBottom: 20 },
   emptyStateButton: { backgroundColor: '#667eea', paddingHorizontal: 25, paddingVertical: 12, borderRadius: 25 },
   emptyStateButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  
+
   calendarContainer: { backgroundColor: '#ffffff', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 5 },
   calendarRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   calendarDayHeader: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#888' },
@@ -349,7 +362,7 @@ const styles = StyleSheet.create({
   legendDotInactive: { backgroundColor: '#f5f5f5' },
   legendDotActive: { backgroundColor: '#667eea' },
   legendText: { fontSize: 12, color: '#666' },
-  
+
   workoutCard: { backgroundColor: '#ffffff', borderRadius: 16, padding: 18, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   workoutCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   workoutCardIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#f0f4ff', alignItems: 'center', justifyContent: 'center', marginRight: 12 },

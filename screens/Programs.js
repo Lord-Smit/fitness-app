@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../src/config/api';
 
@@ -38,6 +38,14 @@ const ProgramsScreen = ({ navigation }) => {
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [activeProgram, setActiveProgram] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchPrograms(), checkActiveProgram()]);
+    setRefreshing(false);
+  }, [selectedDifficulty, selectedType]);
 
   const difficulties = [
     { key: 'all', label: 'All' },
@@ -65,12 +73,19 @@ const ProgramsScreen = ({ navigation }) => {
   const fetchPrograms = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get(`/programs`, {
-        params: { difficulty: selectedDifficulty, type: selectedType }
-      });
+      setErrorMsg(null);
+
+      const params = {};
+      if (selectedDifficulty !== 'all') params.difficulty = selectedDifficulty;
+      if (selectedType !== 'all') params.type = selectedType;
+
+      const res = await apiClient.get(`/programs`, { params });
       setPrograms(res.data.programs);
     } catch (err) {
-      Alert.alert('Error', 'Failed to load programs');
+      console.log(err);
+      const errorMessage = err.response?.data?.msg || err.message || 'Unknown error';
+      setErrorMsg(errorMessage);
+      Alert.alert('Error', `Failed to load programs: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -123,7 +138,7 @@ const ProgramsScreen = ({ navigation }) => {
       setActiveProgram(res.data);
       Alert.alert('Success', 'Program started!');
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.msg || 'Failed to start');
+      Alert.alert('Error', err.response?.data?.msg || err.message || 'Failed to start');
     }
   };
 
@@ -213,6 +228,9 @@ const ProgramsScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
         indicatorStyle="black"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#667eea']} />
+        }
       >
         <View style={styles.filterSection}>
           <Text style={styles.sectionLabel}>Difficulty</Text>
@@ -261,13 +279,16 @@ const ProgramsScreen = ({ navigation }) => {
 
         {programs.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyTitle}>No programs found</Text>
+            <Text style={styles.emptyEmoji}>⚠️</Text>
+            <Text style={styles.emptyTitle}>Failed to load</Text>
+            <Text style={{ color: 'red', textAlign: 'center', marginHorizontal: 20, marginBottom: 10 }}>
+              Debug Error: {errorMsg}
+            </Text>
             <TouchableOpacity
               style={styles.resetBtn}
-              onPress={() => { setSelectedDifficulty('all'); setSelectedType('all'); }}
+              onPress={() => { setErrorMsg(null); fetchPrograms(); }}
             >
-              <Text style={styles.resetBtnText}>Reset Filters</Text>
+              <Text style={styles.resetBtnText}>Retry Connection</Text>
             </TouchableOpacity>
           </View>
         ) : (
