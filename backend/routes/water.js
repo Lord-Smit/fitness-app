@@ -34,30 +34,26 @@ router.post('/', auth, [
   try {
     const { date, amount, unit, note } = req.body;
     const userId = req.user.id;
-    
+
     const startOfDay = getStartOfDay(date ? new Date(date) : new Date());
-    
-    let waterIntake = await WaterIntake.findOne({
-      user: userId,
-      date: {
-        $gte: startOfDay,
-        $lte: getEndOfDay(startOfDay)
-      }
-    });
 
-    if (!waterIntake) {
-      waterIntake = new WaterIntake({
-        user: userId,
-        date: startOfDay,
-        entries: [],
-        dailyGoal: 2500
-      });
-    }
+    const newEntry = {
+      amount,
+      unit: unit || 'ml',
+      note,
+      time: new Date()
+    };
 
-    waterIntake.entries.push({ amount, unit: unit || 'ml', note });
-    waterIntake.totalAmount = waterIntake.entries.reduce((sum, entry) => sum + entry.amount, 0);
-    
-    await waterIntake.save();
+    const waterIntake = await WaterIntake.findOneAndUpdate(
+      { user: userId, date: startOfDay },
+      {
+        $push: { entries: newEntry },
+        $inc: { totalAmount: amount },
+        $setOnInsert: { dailyGoal: 2500 }
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
     res.status(201).json(waterIntake);
   } catch (err) {
     console.error('Error adding water intake:', err.message);
@@ -72,9 +68,9 @@ router.get('/', auth, [
   try {
     const { date } = req.query;
     const userId = req.user.id;
-    
+
     const startOfDay = getStartOfDay(date ? new Date(date) : new Date());
-    
+
     const waterIntake = await WaterIntake.findOne({
       user: userId,
       date: {
@@ -110,12 +106,12 @@ router.get('/week', auth, [
   try {
     const { date } = req.query;
     const userId = req.user.id;
-    
+
     const targetDate = date ? new Date(date) : new Date();
     const startOfWeek = new Date(targetDate);
     startOfWeek.setDate(targetDate.getDate() - targetDate.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
-    
+
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
@@ -178,26 +174,15 @@ router.put('/goal', auth, [
     const date = req.body.date ? new Date(req.body.date) : new Date();
     const startOfDay = getStartOfDay(date);
 
-    let waterIntake = await WaterIntake.findOne({
-      user: userId,
-      date: {
-        $gte: startOfDay,
-        $lte: getEndOfDay(startOfDay)
-      }
-    });
+    const waterIntake = await WaterIntake.findOneAndUpdate(
+      { user: userId, date: startOfDay },
+      {
+        $set: { dailyGoal },
+        $setOnInsert: { entries: [], totalAmount: 0 }
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
 
-    if (!waterIntake) {
-      waterIntake = new WaterIntake({
-        user: userId,
-        date: startOfDay,
-        entries: [],
-        dailyGoal
-      });
-    } else {
-      waterIntake.dailyGoal = dailyGoal;
-    }
-
-    await waterIntake.save();
     res.json(waterIntake);
   } catch (err) {
     console.error('Error updating water goal:', err.message);
@@ -214,7 +199,7 @@ router.delete('/:entryId', auth, [
     const { entryId } = req.params;
     const { date } = req.query;
     const userId = req.user.id;
-    
+
     const startOfDay = getStartOfDay(date ? new Date(date) : new Date());
 
     const waterIntake = await WaterIntake.findOne({
@@ -231,7 +216,7 @@ router.delete('/:entryId', auth, [
 
     waterIntake.entries = waterIntake.entries.filter(entry => entry._id.toString() !== entryId);
     waterIntake.totalAmount = waterIntake.entries.reduce((sum, entry) => sum + entry.amount, 0);
-    
+
     await waterIntake.save();
     res.json(waterIntake);
   } catch (err) {
