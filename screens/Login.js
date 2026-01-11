@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
+import apiClient from '../src/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../src/config/api';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -18,7 +17,7 @@ const LoginScreen = ({ navigation }) => {
     }
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+      const res = await apiClient.post(`/auth/login`, { email, password });
       await AsyncStorage.setItem('token', res.data.token);
       await AsyncStorage.setItem('refreshToken', res.data.refreshToken);
       navigation.replace('Main');
@@ -41,7 +40,7 @@ const LoginScreen = ({ navigation }) => {
 
         <View style={styles.formContainer}>
           <Text style={styles.title}>Welcome Back</Text>
-          
+
           <View style={styles.inputWrapper}>
             <Ionicons name="mail-outline" size={20} color="#8892b0" style={styles.inputIcon} />
             <TextInput
@@ -54,7 +53,7 @@ const LoginScreen = ({ navigation }) => {
               autoCapitalize="none"
             />
           </View>
-          
+
           <View style={styles.inputWrapper}>
             <Ionicons name="lock-closed-outline" size={20} color="#8892b0" style={styles.inputIcon} />
             <TextInput
@@ -74,8 +73,8 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.button, loading && styles.buttonDisabled]} 
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert, ActivityIndicator, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const { width } = Dimensions.get('window');
 
@@ -66,7 +65,7 @@ const ProgramsScreen = ({ navigation }) => {
   const fetchPrograms = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/programs`, {
+      const res = await apiClient.get(`/programs`, {
         params: { difficulty: selectedDifficulty, type: selectedType }
       });
       setPrograms(res.data.programs);
@@ -81,7 +80,7 @@ const ProgramsScreen = ({ navigation }) => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const res = await axios.get(`${API_BASE_URL}/user-programs/active`, {
+        const res = await apiClient.get(`/user-programs/active`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setActiveProgram(res.data);
@@ -117,7 +116,7 @@ const ProgramsScreen = ({ navigation }) => {
   const confirmStart = async (programId, token) => {
     try {
       const res = await axios.post(
-        `${API_BASE_URL}/user-programs/start`,
+        '/user-programs/start`,
         { programId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

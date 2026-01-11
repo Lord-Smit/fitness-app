@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, FlatList, Alert, Dimensions, Animated, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const { height } = Dimensions.get('window');
 
@@ -41,7 +40,7 @@ const ProgramDetailScreen = ({ route, navigation }) => {
   const fetchProgram = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/programs/${programId}`);
+      const res = await apiClient.get(`/programs/${programId}`);
       setProgram(res.data);
     } catch (err) {
       console.log('Error fetching program:', err);
@@ -60,7 +59,7 @@ const ProgramDetailScreen = ({ route, navigation }) => {
       }
 
       const res = await axios.post(
-        `${API_BASE_URL}/user-programs/start`,
+        '/user-programs/start`,
         { programId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

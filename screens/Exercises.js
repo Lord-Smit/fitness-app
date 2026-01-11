@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const ExercisesScreen = ({ navigation }) => {
   const [exercises, setExercises] = useState([]);
@@ -12,7 +11,7 @@ const ExercisesScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/exercises`);
+        const res = await apiClient.get(`/exercises`);
         setExercises(res.data);
         setFilteredExercises(res.data);
       } catch (err) {

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -63,7 +62,7 @@ const RegisterScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE_URL}/auth/register`, { name, email, password });
+      const res = await apiClient.post(`/auth/register`, { name, email, password });
       await AsyncStorage.setItem('token', res.data.token);
       await AsyncStorage.setItem('refreshToken', res.data.refreshToken);
       navigation.replace('Main');

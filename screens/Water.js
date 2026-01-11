@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal, FlatList, Alert } from 'react-native';
 import { Svg, Circle, Path } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const CircularProgress = ({ progress, size, strokeWidth, color, backgroundColor }) => {
   const radius = (size - strokeWidth) / 2;
@@ -66,8 +65,8 @@ const WaterScreen = ({ navigation }) => {
       if (!token) return;
 
       const [todayRes, weekRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/water`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_BASE_URL}/water/week`, { headers: { Authorization: `Bearer ${token}` } })
+        apiClient.get(`/water`, { headers: { Authorization: `Bearer ${token}` } }),
+        apiClient.get(`/water/week`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       setWaterData({
@@ -95,7 +94,7 @@ const WaterScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      await axios.post(`${API_BASE_URL}/water`, { amount }, {
+      await apiClient.post(`/water`, { amount }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -111,7 +110,7 @@ const WaterScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      await axios.delete(`${API_BASE_URL}/water/${entryId}`, {
+      await apiClient.delete(`/water/${entryId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -126,7 +125,7 @@ const WaterScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      await axios.put(`${API_BASE_URL}/water/goal`, { dailyGoal: parseInt(newGoal) || 2500 }, {
+      await apiClient.put(`/water/goal`, { dailyGoal: parseInt(newGoal) || 2500 }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

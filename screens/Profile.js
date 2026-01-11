@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState({});
@@ -54,10 +53,10 @@ const ProfileScreen = ({ navigation }) => {
 
     try {
       const [userRes, workoutsRes, waterRes, activeProgramRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_BASE_URL}/workouts`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_BASE_URL}/water`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_BASE_URL}/user-programs/active`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: null })),
+        apiClient.get(`/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
+        apiClient.get(`/workouts`, { headers: { Authorization: `Bearer ${token}` } }),
+        apiClient.get(`/water`, { headers: { Authorization: `Bearer ${token}` } }),
+        apiClient.get(`/user-programs/active`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: null })),
       ]);
 
       const userData = userRes.data;
@@ -114,7 +113,7 @@ const ProfileScreen = ({ navigation }) => {
   const saveProfile = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
-      const res = await axios.put(`${API_BASE_URL}/auth/me`, { name, email }, {
+      const res = await apiClient.put(`/auth/me`, { name, email }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(res.data);
@@ -128,7 +127,7 @@ const ProfileScreen = ({ navigation }) => {
   const saveBodyMetrics = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
-      const res = await axios.put(`${API_BASE_URL}/auth/me`, {
+      const res = await apiClient.put(`/auth/me`, {
         weight: bodyMetrics.weight ? parseFloat(bodyMetrics.weight) : null,
         height: bodyMetrics.height ? parseFloat(bodyMetrics.height) : null,
         bodyFat: bodyMetrics.bodyFat ? parseFloat(bodyMetrics.bodyFat) : null,
@@ -155,7 +154,7 @@ const ProfileScreen = ({ navigation }) => {
 
     const token = await AsyncStorage.getItem('token');
     try {
-      await axios.put(`${API_BASE_URL}/auth/password`, {
+      await apiClient.put(`/auth/password`, {
         currentPassword: passwords.current,
         newPassword: passwords.new
       }, {
@@ -178,7 +177,7 @@ const ProfileScreen = ({ navigation }) => {
         onPress: async () => {
           const token = await AsyncStorage.getItem('token');
           try {
-            await axios.delete(`${API_BASE_URL}/auth/me`, {
+            await apiClient.delete(`/auth/me`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             await AsyncStorage.removeItem('token');

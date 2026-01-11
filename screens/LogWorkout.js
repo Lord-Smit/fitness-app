@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const LogWorkoutScreen = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -22,7 +21,7 @@ const LogWorkoutScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/exercises`);
+        const res = await apiClient.get(`/exercises`);
         setExercises(res.data);
       } catch (err) {
         Alert.alert('Error', 'Failed to load exercises');
@@ -109,7 +108,7 @@ const LogWorkoutScreen = ({ navigation }) => {
       console.log('Token exists:', !!token);
       console.log('Workout data:', JSON.stringify(workoutData, null, 2));
       
-      const response = await axios.post(`${API_BASE_URL}/workouts`, workoutData, {
+      const response = await apiClient.post(`/workouts`, workoutData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'

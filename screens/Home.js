@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Svg, Circle, Path } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient, { API_BASE_URL } from '../src/config/api';
 
 const CircularProgress = ({ progress, size, strokeWidth, color, backgroundColor }) => {
   const radius = (size - strokeWidth) / 2;
@@ -43,9 +42,11 @@ const HomeScreen = ({ navigation }) => {
   const [lastBMI, setLastBMI] = useState(null);
   const [dailyStats, setDailyStats] = useState({ calories: 0, streak: 0, monthlyWorkouts: 0, activeMinutes: 0 });
   const [waterData, setWaterData] = useState({ totalAmount: 0, dailyGoal: 2500, percentComplete: 0 });
+  const [isLoading, setIsLoading] = useState(true);
   const weeklyGoal = 5;
 
   const fetchData = async () => {
+    setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
       const bmiData = await AsyncStorage.getItem('lastBMI');
@@ -54,7 +55,7 @@ const HomeScreen = ({ navigation }) => {
       }
       if (token) {
         try {
-          const waterRes = await axios.get(`${API_BASE_URL}/water`, {
+          const waterRes = await apiClient.get('/water', {
             headers: { Authorization: `Bearer ${token}` },
           });
           setWaterData({
@@ -66,7 +67,7 @@ const HomeScreen = ({ navigation }) => {
           console.log('Error fetching water data:', waterErr.message);
         }
 
-        const res = await axios.get(`${API_BASE_URL}/workouts`, {
+        const res = await apiClient.get('/workouts', {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data;
@@ -75,24 +76,24 @@ const HomeScreen = ({ navigation }) => {
         startOfWeek.setDate(today.getDate() - today.getDay());
         startOfWeek.setHours(0, 0, 0, 0);
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        
+
         const weeklyWorkouts = data.filter(w => new Date(w.date) >= startOfWeek).length;
         const monthlyWorkouts = data.filter(w => new Date(w.date) >= startOfMonth).length;
-        
+
         const todayWorkouts = data.filter(w => {
           const workoutDate = new Date(w.date);
           return workoutDate.toDateString() === today.toDateString();
         });
-        
+
         const todayCalories = todayWorkouts.reduce((sum, w) => {
           const volume = w.exercises.reduce((s, e) => s + e.sets.reduce((ss, set) => ss + (set.weight || 0) * (set.reps || 0), 0), 0);
           return sum + Math.round(volume * 0.15);
         }, 0);
-        
+
         const todayMinutes = todayWorkouts.reduce((sum, w) => {
           return sum + w.exercises.length * 5;
         }, 0);
-        
+
         let streak = 0;
         for (let i = 0; i < 365; i++) {
           const checkDate = new Date(today);
@@ -107,7 +108,7 @@ const HomeScreen = ({ navigation }) => {
             break;
           }
         }
-        
+
         setWorkouts(data.slice(0, 5));
         setStats({
           workouts: data.length,
@@ -124,7 +125,12 @@ const HomeScreen = ({ navigation }) => {
       }
     } catch (err) {
       console.log('Error fetching data:', err);
-      Alert.alert('Error', 'Failed to load data');
+      const errorMsg = err.code === 'ECONNABORTED'
+        ? 'Server is waking up (cold start). Please wait and try again in 30 seconds.'
+        : err.response?.data?.error || 'Failed to load data. Check your connection.';
+      Alert.alert('Connection Issue', errorMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -145,35 +151,35 @@ const HomeScreen = ({ navigation }) => {
   const weeklyProgress = Math.min(stats.weeklyWorkouts / weeklyGoal, 1);
 
   const statCards = [
-    { 
-      title: 'Calories Burned', 
-      value: dailyStats.calories.toString(), 
-      unit: 'kcal', 
-      icon: '🔥', 
+    {
+      title: 'Calories Burned',
+      value: dailyStats.calories.toString(),
+      unit: 'kcal',
+      icon: '🔥',
       color: '#f97316',
       bgColor: '#fff7ed'
     },
-    { 
-      title: 'Day Streak', 
-      value: dailyStats.streak.toString(), 
-      unit: 'days', 
-      icon: '⚡', 
+    {
+      title: 'Day Streak',
+      value: dailyStats.streak.toString(),
+      unit: 'days',
+      icon: '⚡',
       color: '#eab308',
       bgColor: '#fefce8'
     },
-    { 
-      title: 'This Month', 
-      value: dailyStats.monthlyWorkouts.toString(), 
-      unit: 'workouts', 
-      icon: '📅', 
+    {
+      title: 'This Month',
+      value: dailyStats.monthlyWorkouts.toString(),
+      unit: 'workouts',
+      icon: '📅',
       color: '#22c55e',
       bgColor: '#f0fdf4'
     },
-    { 
-      title: 'Active Time', 
-      value: dailyStats.activeMinutes.toString(), 
-      unit: 'min', 
-      icon: '⏱️', 
+    {
+      title: 'Active Time',
+      value: dailyStats.activeMinutes.toString(),
+      unit: 'min',
+      icon: '⏱️',
       color: '#3b82f6',
       bgColor: '#eff6ff'
     },
@@ -190,7 +196,7 @@ const HomeScreen = ({ navigation }) => {
           <TouchableOpacity style={styles.waterQuickButton} onPress={async () => {
             const token = await AsyncStorage.getItem('token');
             if (token) {
-              await axios.post(`${API_BASE_URL}/water`, { amount: 250 }, {
+              await apiClient.post('/water', { amount: 250 }, {
                 headers: { Authorization: `Bearer ${token}` }
               });
               fetchData();
@@ -272,8 +278,8 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.progressInfo}>
               <Text style={styles.progressTitle}>Workouts This Week</Text>
               <Text style={styles.progressSubtitle}>
-                {weeklyGoal - stats.weeklyWorkouts > 0 
-                  ? `${weeklyGoal - stats.weeklyWorkouts} more to reach your goal!` 
+                {weeklyGoal - stats.weeklyWorkouts > 0
+                  ? `${weeklyGoal - stats.weeklyWorkouts} more to reach your goal!`
                   : '🎉 Goal achieved!'}
               </Text>
               <View style={styles.goalIndicator}>

@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Alert
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const ProgressScreen = ({ navigation }) => {
   const [workouts, setWorkouts] = useState([]);
@@ -15,7 +14,7 @@ const ProgressScreen = ({ navigation }) => {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const res = await axios.get(`${API_BASE_URL}/workouts`, {
+        const res = await apiClient.get(`/workouts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setWorkouts(Array.isArray(res.data) ? res.data : []);

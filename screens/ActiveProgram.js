@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_BASE_URL } from '../src/config/api';
+import apiClient from '../src/config/api';
 
 const ActiveProgramScreen = ({ navigation }) => {
   const [userProgram, setUserProgram] = useState(null);
@@ -26,13 +25,13 @@ const ActiveProgramScreen = ({ navigation }) => {
         return;
       }
 
-      const res = await axios.get(`${API_BASE_URL}/user-programs/active`, {
+      const res = await apiClient.get(`/user-programs/active`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.data) {
         setUserProgram(res.data);
-        const programRes = await axios.get(`${API_BASE_URL}/programs/${res.data.program._id}`);
+        const programRes = await apiClient.get(`/programs/${res.data.program._id}`);
         setProgram(programRes.data);
       }
     } catch (err) {
@@ -50,7 +49,7 @@ const ActiveProgramScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('token');
       
       await axios.post(
-        `${API_BASE_URL}/user-programs/${userProgram._id}/complete-day`,
+        '/user-programs/${userProgram._id}/complete-day`,
         { dayNumber, skipped: false },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -88,7 +87,7 @@ const ActiveProgramScreen = ({ navigation }) => {
   const confirmCancel = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      await axios.delete(`${API_BASE_URL}/user-programs/${userProgram._id}`, {
+      await apiClient.delete(`/user-programs/${userProgram._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUserProgram(null);
