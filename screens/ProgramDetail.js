@@ -58,8 +58,8 @@ const ProgramDetailScreen = ({ route, navigation }) => {
         return;
       }
 
-      const res = await axios.post(
-        '/user-programs/start`,
+      const res = await apiClient.post(
+        '/user-programs/start',
         { programId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -159,7 +159,7 @@ const ProgramDetailScreen = ({ route, navigation }) => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

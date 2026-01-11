@@ -115,8 +115,8 @@ const ProgramsScreen = ({ navigation }) => {
 
   const confirmStart = async (programId, token) => {
     try {
-      const res = await axios.post(
-        '/user-programs/start`,
+      const res = await apiClient.post(
+        '/user-programs/start',
         { programId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -142,23 +142,23 @@ const ProgramsScreen = ({ navigation }) => {
           <Text style={styles.cardIcon}>{getTypeIcon(item.type)}</Text>
           <View style={[styles.diffDot, { backgroundColor: diffColor }]} />
         </View>
-        
+
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
-          
+
           <View style={styles.cardMeta}>
             <Text style={styles.metaText}>{item.daysPerWeek} days/wk</Text>
             <Text style={styles.metaDot}>•</Text>
             <Text style={styles.metaText}>{item.durationWeeks} weeks</Text>
           </View>
-          
+
           <View style={[styles.typeTag, { backgroundColor: typeColor + '15' }]}>
             <Text style={[styles.typeTagText, { color: typeColor }]}>
               {item.type.replace('-', ' ')}
             </Text>
           </View>
         </View>
-        
+
         <TouchableOpacity
           style={[styles.cardBtn, { backgroundColor: typeColor }]}
           onPress={(e) => { e.stopPropagation(); startProgram(item._id); }}
@@ -184,8 +184,8 @@ const ProgramsScreen = ({ navigation }) => {
           <Text style={styles.menuBtnText}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Programs</Text>
-        <TouchableOpacity 
-          style={styles.myPlanBtn} 
+        <TouchableOpacity
+          style={styles.myPlanBtn}
           onPress={() => navigation.navigate('My Program')}
         >
           <Text style={styles.myPlanBtnText}>My Plan</Text>
@@ -193,7 +193,7 @@ const ProgramsScreen = ({ navigation }) => {
       </View>
 
       {activeProgram && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.activeBanner}
           onPress={() => navigation.navigate('My Program')}
         >
@@ -208,7 +208,7 @@ const ProgramsScreen = ({ navigation }) => {
         </TouchableOpacity>
       )}
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
@@ -263,7 +263,7 @@ const ProgramsScreen = ({ navigation }) => {
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🔍</Text>
             <Text style={styles.emptyTitle}>No programs found</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.resetBtn}
               onPress={() => { setSelectedDifficulty('all'); setSelectedType('all'); }}
             >

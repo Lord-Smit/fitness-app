@@ -43,13 +43,13 @@ const ActiveProgramScreen = ({ navigation }) => {
 
   const handleCompleteDay = async (dayNumber, isRestDay) => {
     if (completing) return;
-    
+
     try {
       setCompleting(true);
       const token = await AsyncStorage.getItem('token');
-      
-      await axios.post(
-        '/user-programs/${userProgram._id}/complete-day`,
+
+      await apiClient.post(
+        `/user-programs/${userProgram._id}/complete-day`,
         { dayNumber, skipped: false },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -101,10 +101,10 @@ const ActiveProgramScreen = ({ navigation }) => {
 
   const getTodayDate = () => {
     const today = new Date();
-    return today.toLocaleDateString('en-IN', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
+    return today.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       timeZone: 'Asia/Kolkata'
     });
@@ -112,8 +112,8 @@ const ActiveProgramScreen = ({ navigation }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', { 
-      day: 'numeric', 
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
       month: 'short',
       timeZone: 'Asia/Kolkata'
     });
@@ -150,7 +150,7 @@ const ActiveProgramScreen = ({ navigation }) => {
           <Text style={styles.emptyEmoji}>📋</Text>
           <Text style={styles.emptyTitle}>No Active Program</Text>
           <Text style={styles.emptySubtitle}>Start a program to see your schedule here</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.browseButton}
             onPress={() => navigation.navigate('Programs')}
           >
