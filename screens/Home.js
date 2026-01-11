@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Svg, Circle, Path } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient, { API_BASE_URL } from '../src/config/api';
 import { useNetwork } from '../src/context/NetworkContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CircularProgress = ({ progress, size, strokeWidth, color, backgroundColor }) => {
   const radius = (size - strokeWidth) / 2;
@@ -162,9 +163,11 @@ const HomeScreen = ({ navigation }) => {
   };
 
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const getBMIColor = (category) => {
     switch (category) {
