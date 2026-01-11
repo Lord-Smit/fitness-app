@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient, { API_BASE_URL } from '../src/config/api';
 import { useNetwork } from '../src/context/NetworkContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CircularProgress = ({ progress, size, strokeWidth, color, backgroundColor }) => {
   const radius = (size - strokeWidth) / 2;
@@ -217,7 +218,7 @@ const HomeScreen = ({ navigation }) => {
   ];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.menuButton} onPress={() => navigation.openDrawer()}>
           <Text style={styles.menuButtonText}>☰</Text>
@@ -376,13 +377,13 @@ const HomeScreen = ({ navigation }) => {
           scrollEnabled={false}
         />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fc' },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 15, backgroundColor: '#ffffff' },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, backgroundColor: '#ffffff' },
   menuButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8f9fc', alignItems: 'center', justifyContent: 'center' },
   menuButtonText: { fontSize: 20 },
   topBarTitle: { fontSize: 20, fontWeight: '700', color: '#1a1a2e' },

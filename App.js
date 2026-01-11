@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NetworkProvider } from './src/context/NetworkContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -142,17 +144,20 @@ export default function App() {
 
   return (
     <NetworkProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="Main" component={DrawerNavigator} />
-            <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
-            <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <NavigationContainer>
+            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="Main" component={DrawerNavigator} />
+              <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
+              <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     </NetworkProvider>
   );
 }

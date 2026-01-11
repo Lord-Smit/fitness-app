@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../src/config/api';
 
@@ -193,7 +194,7 @@ const ProgramsScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.openDrawer()}>
           <Text style={styles.menuBtnText}>☰</Text>
@@ -303,7 +304,7 @@ const ProgramsScreen = ({ navigation }) => {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
+    paddingTop: 10,
     paddingBottom: 16,
     backgroundColor: '#fff',
   },

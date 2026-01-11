@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Alert, Image, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -136,170 +137,173 @@ const ProgressScreen = ({ navigation }) => {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#667eea']} />
-      }
-    >
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>← Dashboard</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#667eea']} />
+        }
+      >
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>← Dashboard</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.header}>
-        <Text style={styles.title}>💪 Your Progress</Text>
-        <Text style={styles.subtitle}>Track your fitness journey</Text>
-      </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>💪 Your Progress</Text>
+          <Text style={styles.subtitle}>Track your fitness journey</Text>
+        </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.mainStatRow}>
-          <View style={styles.mainStatCard}>
-            <Text style={styles.mainStatValue}>{totalWorkouts}</Text>
-            <Text style={styles.mainStatLabel}>Total Workouts</Text>
-            <View style={styles.mainStatTrend}>
-              <Text style={styles.trendUp}>↑ 12%</Text>
-              <Text style={styles.trendLabel}>this month</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.mainStatRow}>
+            <View style={styles.mainStatCard}>
+              <Text style={styles.mainStatValue}>{totalWorkouts}</Text>
+              <Text style={styles.mainStatLabel}>Total Workouts</Text>
+              <View style={styles.mainStatTrend}>
+                <Text style={styles.trendUp}>↑ 12%</Text>
+                <Text style={styles.trendLabel}>this month</Text>
+              </View>
+            </View>
+            <View style={styles.mainStatCardSecondary}>
+              <Text style={styles.secondaryStatValue}>{streak}</Text>
+              <Text style={styles.secondaryStatLabel}>Day Streak 🔥</Text>
             </View>
           </View>
-          <View style={styles.mainStatCardSecondary}>
-            <Text style={styles.secondaryStatValue}>{streak}</Text>
-            <Text style={styles.secondaryStatLabel}>Day Streak 🔥</Text>
+
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statIcon}>🏋️</Text>
+              </View>
+              <Text style={styles.statNumber}>{totalWeight.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>Total Volume (lbs)</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statIcon}>📊</Text>
+              </View>
+              <Text style={styles.statNumber}>{avgWeight.toFixed(0)}</Text>
+              <Text style={styles.statLabel}>Avg Volume/Workout</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statIcon}>📅</Text>
+              </View>
+              <Text style={styles.statNumber}>{thisWeek}</Text>
+              <Text style={styles.statLabel}>This Week</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statIcon}>💪</Text>
+              </View>
+              <Text style={styles.statNumber}>{totalExercises}</Text>
+              <Text style={styles.statLabel}>Total Exercises</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statIcon}>🎯</Text>
+              </View>
+              <Text style={styles.statNumber}>{totalSets}</Text>
+              <Text style={styles.statLabel}>Total Sets</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statIcon}>⭐</Text>
+              </View>
+              <Text style={styles.statNumber}>{bestWorkout.toFixed(0)}</Text>
+              <Text style={styles.statLabel}>Best Workout (lbs)</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statIcon}>🏋️</Text>
-            </View>
-            <Text style={styles.statNumber}>{totalWeight.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Total Volume (lbs)</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🗓️ Activity Calendar</Text>
+            <Text style={styles.sectionSubtitle}>Last 4 weeks</Text>
           </View>
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statIcon}>📊</Text>
-            </View>
-            <Text style={styles.statNumber}>{avgWeight.toFixed(0)}</Text>
-            <Text style={styles.statLabel}>Avg Volume/Workout</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statIcon}>📅</Text>
-            </View>
-            <Text style={styles.statNumber}>{thisWeek}</Text>
-            <Text style={styles.statLabel}>This Week</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statIcon}>💪</Text>
-            </View>
-            <Text style={styles.statNumber}>{totalExercises}</Text>
-            <Text style={styles.statLabel}>Total Exercises</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statIcon}>🎯</Text>
-            </View>
-            <Text style={styles.statNumber}>{totalSets}</Text>
-            <Text style={styles.statLabel}>Total Sets</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statIcon}>⭐</Text>
-            </View>
-            <Text style={styles.statNumber}>{bestWorkout.toFixed(0)}</Text>
-            <Text style={styles.statLabel}>Best Workout (lbs)</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🗓️ Activity Calendar</Text>
-          <Text style={styles.sectionSubtitle}>Last 4 weeks</Text>
-        </View>
-        <View style={styles.calendarContainer}>
-          <View style={styles.calendarRow}>
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-              <Text key={day} style={styles.calendarDayHeader}>{day}</Text>
-            ))}
-          </View>
-          {tableData.map((week, weekIndex) => (
-            <View key={weekIndex} style={styles.calendarRow}>
-              <Text style={styles.weekLabel}>W{4 - weekIndex}</Text>
-              {week.map((cell, dayIndex) => (
-                <View
-                  key={dayIndex}
-                  style={[
-                    styles.calendarCell,
-                    cell.hasWorkout && styles.calendarCellActive
-                  ]}
-                >
-                  <Text style={[styles.calendarCellText, cell.hasWorkout && styles.calendarCellTextActive]}>
-                    {cell.date.getDate()}
-                  </Text>
-                  {cell.hasWorkout && <View style={styles.activityDot} />}
-                </View>
+          <View style={styles.calendarContainer}>
+            <View style={styles.calendarRow}>
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                <Text key={day} style={styles.calendarDayHeader}>{day}</Text>
               ))}
             </View>
-          ))}
-        </View>
-        <View style={styles.calendarLegend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, styles.legendDotInactive]} />
-            <Text style={styles.legendText}>No workout</Text>
+            {tableData.map((week, weekIndex) => (
+              <View key={weekIndex} style={styles.calendarRow}>
+                <Text style={styles.weekLabel}>W{4 - weekIndex}</Text>
+                {week.map((cell, dayIndex) => (
+                  <View
+                    key={dayIndex}
+                    style={[
+                      styles.calendarCell,
+                      cell.hasWorkout && styles.calendarCellActive
+                    ]}
+                  >
+                    <Text style={[styles.calendarCellText, cell.hasWorkout && styles.calendarCellTextActive]}>
+                      {cell.date.getDate()}
+                    </Text>
+                    {cell.hasWorkout && <View style={styles.activityDot} />}
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, styles.legendDotActive]} />
-            <Text style={styles.legendText}>Workout completed</Text>
+          <View style={styles.calendarLegend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, styles.legendDotInactive]} />
+              <Text style={styles.legendText}>No workout</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, styles.legendDotActive]} />
+              <Text style={styles.legendText}>Workout completed</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>📈 Volume Progress</Text>
-          <Text style={styles.sectionSubtitle}>Last 7 workouts</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📈 Volume Progress</Text>
+            <Text style={styles.sectionSubtitle}>Last 7 workouts</Text>
+          </View>
+          {workouts.length > 0 ? (
+            <View style={styles.chartContainer}>
+              <LineChart
+                data={chartData}
+                width={Dimensions.get('window').width - 80}
+                height={200}
+                chartConfig={{
+                  backgroundColor: '#ffffff',
+                  backgroundGradientFrom: '#667eea',
+                  backgroundGradientTo: '#764ba2',
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                  style: { borderRadius: 16, paddingTop: 10 },
+                  propsForDots: { r: '6', strokeWidth: '3', stroke: '#ffffff' },
+                }}
+                bezier
+                style={styles.chart}
+                withInnerLines={false}
+                withOuterLines={false}
+              />
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateEmoji}>📊</Text>
+              <Text style={styles.emptyStateTitle}>No Data Yet</Text>
+              <Text style={styles.emptyStateSubtitle}>Complete your first workout to see your progress chart!</Text>
+            </View>
+          )}
         </View>
-        {workouts.length > 0 ? (
-          <View style={styles.chartContainer}>
-            <LineChart
-              data={chartData}
-              width={Dimensions.get('window').width - 80}
-              height={200}
-              chartConfig={{
-                backgroundColor: '#ffffff',
-                backgroundGradientFrom: '#667eea',
-                backgroundGradientTo: '#764ba2',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                style: { borderRadius: 16, paddingTop: 10 },
-                propsForDots: { r: '6', strokeWidth: '3', stroke: '#ffffff' },
-              }}
-              bezier
-              style={styles.chart}
-              withInnerLines={false}
-              withOuterLines={false}
-            />
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateEmoji}>📊</Text>
-            <Text style={styles.emptyStateTitle}>No Data Yet</Text>
-            <Text style={styles.emptyStateSubtitle}>Complete your first workout to see your progress chart!</Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fc' },
+  scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingVertical: 20, alignItems: 'center' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fc' },
   loadingSpinner: { width: 50, height: 50, borderRadius: 25, borderWidth: 4, borderColor: '#e0e0e0', borderTopColor: '#667eea', marginBottom: 20 },
